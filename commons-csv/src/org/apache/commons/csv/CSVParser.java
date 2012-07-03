@@ -63,7 +63,7 @@ import static org.apache.commons.csv.Token.Type.*;
 public class CSVParser implements Iterable<CSVRecord> {
 
     private final Lexer lexer;
-    private final Map<String, Integer> headerMapping;
+    private final Map<String, Integer> headerMapping = new HashMap<String, Integer>();
 
     // the following objects are shared to reduce garbage
     
@@ -92,8 +92,10 @@ public class CSVParser implements Iterable<CSVRecord> {
         format.validate();
         
         this.lexer = new CSVLexer(format, new ExtendedBufferedReader(input));
-        
-        this.headerMapping = initializeHeader(format);
+        Map<String, Integer> header = initializeHeader(format);
+        if (header != null) {   
+            this.headerMapping.putAll(header);
+        }
     }
 
     /**
@@ -144,7 +146,9 @@ public class CSVParser implements Iterable<CSVRecord> {
                     record.add(reusableToken.content.toString());
                     break;
                 case EORECORD:
-                    record.add(reusableToken.content.toString());
+                    if (!record.isEmpty() || reusableToken.content.length() > 0) {
+                      record.add(reusableToken.content.toString());
+                    }
                     break;
                 case EOF:
                     if (reusableToken.isReady) {
@@ -178,10 +182,7 @@ public class CSVParser implements Iterable<CSVRecord> {
      * Initializes the name to index mapping if the format defines a header.
      */
     private Map<String, Integer> initializeHeader(CSVFormat format) throws IOException {
-        Map<String, Integer> hdrMap = null;
         if (format.getHeader() != null) {
-            hdrMap = new HashMap<String, Integer>();
-
             String[] header = null;
             if (format.getHeader().length == 0) {
                 // read the header from the first line of the file
@@ -192,17 +193,26 @@ public class CSVParser implements Iterable<CSVRecord> {
             } else {
                 header = format.getHeader();
             }
+            return createHeader(header);
+        }
+        return null;
+    }
 
-            // build the name to index mappings
-            if (header != null) {
-                for (int i = 0; i < header.length; i++) {
-                    hdrMap.put(header[i], Integer.valueOf(i));
-                }
+    public void readHeader(CSVRecord rec) {
+        headerMapping.clear();
+        headerMapping.putAll(createHeader(rec.values()));
+    }
+
+    private Map<String, Integer> createHeader(String[] header) {
+        Map<String, Integer> hdrMap = new HashMap<String, Integer>();
+        // build the name to index mappings
+        if (header != null) {
+            for (int i = 0; i < header.length; i++) {
+                hdrMap.put(header[i], Integer.valueOf(i));
             }
         }
         return hdrMap;
     }
-
     /**
      * Returns an iterator on the records. IOExceptions occuring
      * during the iteration are wrapped in a RuntimeException.
