@@ -21,6 +21,7 @@ import io.milton.http.exceptions.BadRequestException;
 import io.milton.http.exceptions.ConflictException;
 import io.milton.http.exceptions.NotAuthorizedException;
 import io.milton.http.exceptions.NotFoundException;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
@@ -32,6 +33,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.entity.FileEntity;
 import org.apache.http.entity.InputStreamEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,23 +92,44 @@ public class TransferService {
         }
     }
 
-    public HttpResult put(String encodedUrl, InputStream content, Long contentLength, String contentType, ProgressListener listener) {
+    private HttpResult put(String encodedUrl, HttpEntity httpEntity) throws IOException {
         LogUtils.trace(log, "put: ", encodedUrl);
         notifyStartRequest();
-        String s = encodedUrl;
-        HttpPut p = new HttpPut(s);
+        HttpPut p = new HttpPut(encodedUrl);
+        p.setEntity(httpEntity);
+        return Utils.executeHttpWithResult(client, p, null);
+    }
 
+    public HttpResult put(String encodedUrl, InputStream content, Long contentLength, String contentType, ProgressListener listener) {
         NotifyingFileInputStream notifyingIn = null;
         try {
-            notifyingIn = new NotifyingFileInputStream(content, contentLength, s, listener);
+            notifyingIn = new NotifyingFileInputStream(content, contentLength, encodedUrl, listener);
             HttpEntity requestEntity;
             if (contentLength == null) {
                 throw new RuntimeException("Content length for input stream is null, you must provide a length");                
             } else {
                 requestEntity = new InputStreamEntity(notifyingIn, contentLength);
             }
-            p.setEntity(requestEntity);
-            return Utils.executeHttpWithResult(client, p, null);
+            return put(encodedUrl, requestEntity);
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        } finally {
+            IOUtils.closeQuietly(notifyingIn);
+            notifyFinishRequest();
+        }
+    }
+
+    public HttpResult put(String encodedUrl, File file, String contentType, ProgressListener listener) {
+        NotifyingFileInputStream notifyingIn = null;
+        try {
+            notifyingIn = new NotifyingFileInputStream(file, listener);
+            final InputStream fileStream = notifyingIn;
+            HttpEntity requestEntity = new FileEntity(file) {
+                public InputStream getContent() throws IOException {
+                    return fileStream;
+                }
+            };
+            return put(encodedUrl, requestEntity);
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         } finally {

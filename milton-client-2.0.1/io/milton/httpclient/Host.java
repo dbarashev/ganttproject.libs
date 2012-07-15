@@ -391,15 +391,8 @@ public class Host extends Folder {
                 throw new GenericHttpException(remotePath.toString(), ex);
             }
         }
-        InputStream in = null;
-        try {
-            in = new FileInputStream(file);
-            String dest = buildEncodedUrl(remotePath);
-            return doPut(dest, in, file.length(), null, listener);
-        } finally {
-            IOUtils.closeQuietly(in);
-        }
-
+        String dest = buildEncodedUrl(remotePath);
+        return transferService.put(dest, file, null, listener);
     }
 
     /**
