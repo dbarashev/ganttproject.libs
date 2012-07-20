@@ -163,12 +163,12 @@ public abstract class Resource {
         return host().doPost(encodedUrl(), params);
     }
 
-    public void lock() throws HttpException, NotAuthorizedException, ConflictException, BadRequestException, NotFoundException {
+    public void lock(int timeout) throws HttpException, NotAuthorizedException, ConflictException, BadRequestException, NotFoundException {
         if (lockToken != null) {
             log.warn("already locked: " + href() + " token: " + lockToken);
         }
         try {
-            lockToken = host().doLock(encodedUrl());
+            lockToken = host().doLock(encodedUrl(), timeout);
         } catch (URISyntaxException ex) {
             throw new RuntimeException(ex);
         }
