@@ -17,12 +17,11 @@ package com.bardsoftware.server.auth;
 
 import java.util.Properties;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.scribe.builder.api.Api;
 
+import com.bardsoftware.server.HttpApi;
 import com.google.common.base.Function;
 
 public class DefaultOAuthPlugin implements OAuthPlugin {
@@ -108,12 +107,12 @@ public class DefaultOAuthPlugin implements OAuthPlugin {
     return getProperty(".auth.scope");
   }
   
-  public String extractToken(HttpServletRequest req) {
-    return req.getParameter(getProperty(".param.request_token"));
+  public String extractToken(HttpApi req) {
+    return req.getUrlParameter(getProperty(".param.request_token"));
   }
   
-  public String extractVerifier(HttpServletRequest req) {
-    return req.getParameter(getProperty(".param.verifier"));
+  public String extractVerifier(HttpApi req) {
+    return req.getUrlParameter(getProperty(".param.verifier"));
   }
   
   public String getProperty(String suffix) {

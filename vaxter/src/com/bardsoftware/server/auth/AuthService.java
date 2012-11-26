@@ -20,50 +20,41 @@ import java.security.NoSuchAlgorithmException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.bardsoftware.server.AppCapabilitiesService;
-import com.bardsoftware.server.AppCapabilitiesService.AppCapability;
+import com.bardsoftware.server.AppCapability;
+import com.bardsoftware.server.HttpApi;
+//import com.bardsoftware.server.auth.gae.AppCapabilitiesServiceImpl;
+//import com.bardsoftware.server.auth.gae.PrincipalGae;
 import com.google.common.base.Charsets;
 
 public class AuthService {
   private static final Logger LOGGER = Logger.getLogger("AuthService");
   private final String authDomain;
   private final AppCapabilitiesService capabilities;
+  private final PrincipalExtent principalExtent;
 
-  public AuthService(String authDomain) {
-    this(authDomain, new AppCapabilitiesService());
-  }
-  
-  public AuthService(String authDomain, AppCapabilitiesService capabilitiesService) {
+  public AuthService(String authDomain, PrincipalExtent principalExtent, AppCapabilitiesService capabilities) {
+    this.principalExtent = principalExtent;
     this.authDomain = authDomain;
-    this.capabilities = capabilitiesService;
+    this.capabilities = capabilities;
   }
   
-  private Principal getUser(final HttpServletRequest req) {
-    Object userId = req.getSession().getAttribute("user_id");
+  private Principal getUser(final HttpApi http) {
+    String userId = http.getUsername();
     if (LOGGER.isLoggable(Level.FINE)) {
-      LOGGER.fine("req url=" + req.getRequestURL() + "session id=" + req.getSession().getId() + "user id=" + userId);
+      LOGGER.fine("req url=" + http.getRequestUrl() + "session id=" + http.getSessionId() + "user id=" + userId);
     }
-    return (userId == null) ? null : Principal.find(String.valueOf(userId));
+    return (userId == null) ? null : principalExtent.find(String.valueOf(userId));
   }
   
-  public void logout(Principal user, HttpServletRequest req, HttpServletResponse resp) {
-    HttpSession session = req.getSession(false);
-    if (session != null) {
-      session.setAttribute("user_id", null);
+  public void logout(Principal user, HttpApi http) {
+    if (http.hasSession()) {
+      http.setUsername(null);
     }
-    Cookie cookie = new Cookie("JSESSIONID", null);
-    cookie.setDomain(authDomain);
-    cookie.setPath("/");
-    cookie.setMaxAge(0);
-    resp.addCookie(cookie);
+    http.setCookie("JSESSIONID", authDomain, "/", 0);
   }
     
     public static String getMD5(String src) throws NoSuchAlgorithmException {
@@ -81,12 +72,12 @@ public class AuthService {
       return hexDigest.toString();
     }
         
-    public Principal remember(HttpServletRequest req, Principal user) {
+    public Principal remember(HttpApi http, Principal user) {
       if (user == null) {
         user = Principal.ANONYMOUS;
       } else {
-          req.getSession().setAttribute("user_id", user.getID());
-          req.setAttribute("user_id", user.getID());
+          http.setUsername(user.getID());
+          http.setRequestAttribute("user_id", user.getID());
       }
       return user;
     }
@@ -100,10 +91,10 @@ public class AuthService {
         JSONObject json = new JSONObject(jsonText.toString());
         if (loginService.isResponseOk(json)) {
           String userId = loginService.createUserId(json); 
-          Principal result = Principal.find(userId);
+          Principal result = principalExtent.find(userId);
           if (result == null) {
             String name = loginService.createUserName(json);
-            result = new Principal(userId, name);
+            result = principalExtent.create(userId, name);
           }
           result.save();
           return result;
@@ -114,23 +105,23 @@ public class AuthService {
       return null;
     }
     
-    public Principal setupUserAndMaintenance(HttpServletRequest req) {
+    public Principal setupUserAndMaintenance(HttpApi http) {
       Principal user = Principal.ANONYMOUS;
       AppCapability writeCapability = capabilities.getWriteCapability();
       switch (writeCapability.status) {
       case ENABLED:
-        user = getUser(req);
+        user = getUser(http);
         if (user == null) {
           user = Principal.ANONYMOUS;
         }
-        req.setAttribute("nickname", user.getNickname());
+        http.setRequestAttribute("nickname", user.getNickname());
         if (user != Principal.ANONYMOUS) {
-          req.setAttribute("user_id", user.getID());
+          http.setRequestAttribute("user_id", user.getID());
         }
         break;
       case DISABLED:
-        req.setAttribute("maintenance", true);
-        req.setAttribute("maintenance_", writeCapability.message);
+        http.setRequestAttribute("maintenance", true);
+        http.setRequestAttribute("maintenance_", writeCapability.message);
         break;
       }
       return user;

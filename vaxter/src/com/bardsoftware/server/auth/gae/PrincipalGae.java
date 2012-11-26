@@ -13,36 +13,34 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package com.bardsoftware.server.auth;
+package com.bardsoftware.server.auth.gae;
 
 import java.util.Collection;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import com.bardsoftware.server.auth.Principal;
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import com.googlecode.objectify.Objectify;
 import com.googlecode.objectify.ObjectifyService;
 
-public class Principal {
-  private static final Logger LOGGER = Logger.getLogger(Principal.class.getName());
+public class PrincipalGae implements Principal {
+  private static final Logger LOGGER = Logger.getLogger(PrincipalGae.class.getName());
 
-  public static final Principal ANONYMOUS = new Principal("@anonymous", "Anonymous");
+  public static final PrincipalGae ANONYMOUS = new PrincipalGae("@anonymous", "Anonymous");
 
   private final PrincipalEntity myEntity;
 
   public static void registerEntities() {
   }
-  static {
-    ObjectifyService.register(PrincipalEntity.class);
-  }
 
   
-  public Principal(String id, String displayName) {
+  public PrincipalGae(String id, String displayName) {
     myEntity = new PrincipalEntity(id, displayName, null);
   }
 
-  public Principal(PrincipalEntity entity) {
+  public PrincipalGae(PrincipalEntity entity) {
     myEntity = entity;
   }
 
@@ -71,19 +69,19 @@ public class Principal {
       return getDisplayName();
   }
 
-  public static Collection<Principal> find(Collection<String> ids) {
+  public static Collection<PrincipalGae> find(Collection<String> ids) {
     Objectify ofy = ObjectifyService.begin();
     Map<String, PrincipalEntity> map = ofy.get(PrincipalEntity.class, ids);
-    return Collections2.transform(map.values(), new Function<PrincipalEntity, Principal>() {
+    return Collections2.transform(map.values(), new Function<PrincipalEntity, PrincipalGae>() {
       @Override
-      public Principal apply(PrincipalEntity entity) {
-        return new Principal(entity);
+      public PrincipalGae apply(PrincipalEntity entity) {
+        return new PrincipalGae(entity);
       }
     });
   }
 
   public boolean canWrite() {
-      return this != Principal.ANONYMOUS;
+      return this != PrincipalGae.ANONYMOUS;
   }
 
   public void setToken(String token) {
@@ -94,22 +92,16 @@ public class Principal {
     return myEntity.token;
   }
 
-  public static Principal find(String id) {
-    Objectify ofy = ObjectifyService.begin();
-    PrincipalEntity entity = ofy.find(PrincipalEntity.class, id);
-    return entity == null ? null : new Principal(entity);
-  }
-  
-  public static Principal findByEmail(String email) {
+  public static PrincipalGae findByEmail(String email) {
     Objectify ofy = ObjectifyService.begin();
     PrincipalEntity entity = ofy.query(PrincipalEntity.class).filter("contacts.email =", email).get();
-    return entity == null ? null : new Principal(entity);
+    return entity == null ? null : new PrincipalGae(entity);
   }
   
-  public static Principal find(com.googlecode.objectify.Key<PrincipalEntity> key) {
+  public static PrincipalGae find(com.googlecode.objectify.Key<PrincipalEntity> key) {
     Objectify ofy = ObjectifyService.begin();
     PrincipalEntity entity = ofy.get(key);
-    return entity == null ? null : new Principal(entity);
+    return entity == null ? null : new PrincipalGae(entity);
   }
 
   public void save() {

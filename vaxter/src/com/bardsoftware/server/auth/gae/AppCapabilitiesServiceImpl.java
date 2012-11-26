@@ -13,31 +13,31 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package com.bardsoftware.server;
+package com.bardsoftware.server.auth.gae;
 
+import java.util.Map;
+
+import com.bardsoftware.server.AppCapabilitiesService;
+import com.bardsoftware.server.AppCapability;
 import com.google.appengine.api.capabilities.CapabilitiesService;
 import com.google.appengine.api.capabilities.CapabilitiesServiceFactory;
 import com.google.appengine.api.capabilities.CapabilityState;
 import com.google.appengine.api.capabilities.CapabilityStatus;
+import com.google.common.collect.ImmutableMap;
 
-public class AppCapabilitiesService {
-  public static class AppCapability {
-    public final CapabilityStatus status;
-    public final String message;
-    
-    public AppCapability(CapabilityStatus status, String message) {
-      this.status = status;
-      this.message = message;
-    }
-  }
-  
+public class AppCapabilitiesServiceImpl implements AppCapabilitiesService {
   private static final CapabilitiesService SERVICE = CapabilitiesServiceFactory.getCapabilitiesService();
+  private final Map<CapabilityStatus, AppCapability.Status> MAPPING = ImmutableMap.of(
+      CapabilityStatus.DISABLED, AppCapability.Status.DISABLED,
+      CapabilityStatus.ENABLED, AppCapability.Status.ENABLED,
+      CapabilityStatus.SCHEDULED_MAINTENANCE, AppCapability.Status.SCHEDULED_MAINTENANCE,
+      CapabilityStatus.UNKNOWN, AppCapability.Status.UNKNOWN);
   
   public AppCapability getWriteCapability() {
     CapabilityState status = SERVICE.getStatus(com.google.appengine.api.capabilities.Capability.DATASTORE_WRITE);
     if (status.getStatus() == CapabilityStatus.DISABLED) {
-      return new AppCapability(status.getStatus(), "It appears that Google App Engine is having problems");
+      return new AppCapability(MAPPING.get(status.getStatus()), "It appears that Google App Engine is having problems");
     }
-    return new AppCapability(CapabilityStatus.ENABLED, null);
+    return new AppCapability(MAPPING.get(status.getStatus()), null);
   }
 }
