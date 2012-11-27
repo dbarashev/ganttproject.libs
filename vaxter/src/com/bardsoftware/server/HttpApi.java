@@ -13,10 +13,11 @@ public interface HttpApi {
   void setUsername(String value);
   Object getSessionAttribute(String name);
   void setSessionAttribute(String name, Object object);
+  void clearSession();
   
   void setRequestAttribute(String name, Object value);
   
-  void setCookie(String name, String domain, String path, int maxAge);
+  
   void sendRedirect(String buildUrlFromPath) throws IOException;
   void sendError(int code) throws IOException;
 }

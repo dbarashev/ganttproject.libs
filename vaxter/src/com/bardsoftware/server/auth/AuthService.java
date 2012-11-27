@@ -32,13 +32,12 @@ import com.google.common.base.Charsets;
 
 public class AuthService {
   private static final Logger LOGGER = Logger.getLogger("AuthService");
-  private final String authDomain;
+//  private final String authDomain;
   private final AppCapabilitiesService capabilities;
   private final PrincipalExtent principalExtent;
 
-  public AuthService(String authDomain, PrincipalExtent principalExtent, AppCapabilitiesService capabilities) {
+  public AuthService(PrincipalExtent principalExtent, AppCapabilitiesService capabilities) {
     this.principalExtent = principalExtent;
-    this.authDomain = authDomain;
     this.capabilities = capabilities;
   }
   
@@ -54,7 +53,7 @@ public class AuthService {
     if (http.hasSession()) {
       http.setUsername(null);
     }
-    http.setCookie("JSESSIONID", authDomain, "/", 0);
+    http.clearSession();
   }
     
     public static String getMD5(String src) throws NoSuchAlgorithmException {

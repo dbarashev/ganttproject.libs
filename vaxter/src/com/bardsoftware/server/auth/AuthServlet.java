@@ -49,7 +49,7 @@ public class AuthServlet {
   public AuthServlet(boolean devMode, PrincipalExtent principalExtent, AppCapabilitiesService capabilities) {
     isDevMode = devMode;
     myUrlService = new AppUrlService(devMode);
-    authService = new AuthService(myUrlService.getDomainName(), principalExtent, capabilities);
+    authService = new AuthService(principalExtent, capabilities);
     this.properties = new Properties();
     loadProperties(this.properties, "/auth.properties");
     loadProperties(this.properties, "/auth.secret.properties");    

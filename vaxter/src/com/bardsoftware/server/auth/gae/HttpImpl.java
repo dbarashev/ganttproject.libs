@@ -7,15 +7,18 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import com.bardsoftware.server.AppUrlService;
 import com.bardsoftware.server.HttpApi;
 
 public class HttpImpl implements HttpApi {
   private final HttpServletRequest myRequest;
   private final HttpServletResponse myResponse;
-
-  public HttpImpl(HttpServletRequest req, HttpServletResponse resp) {
+  private final AppUrlService myUrlService;
+  
+  public HttpImpl(HttpServletRequest req, HttpServletResponse resp, AppUrlService urlService) {
     myRequest = req;
     myResponse = resp;
+    myUrlService = urlService;
   }
   
   @Override
@@ -27,15 +30,6 @@ public class HttpImpl implements HttpApi {
   @Override
   public void setUsername(String value) {
     myRequest.getSession().setAttribute("user_id", value);
-  }
-
-  @Override
-  public void setCookie(String name, String domain, String path, int maxAge) {
-    Cookie cookie = new Cookie(name, null);
-    cookie.setDomain(domain);
-    cookie.setPath(path);
-    cookie.setMaxAge(maxAge);
-    myResponse.addCookie(cookie);
   }
 
   @Override
@@ -87,5 +81,14 @@ public class HttpImpl implements HttpApi {
   @Override
   public void setSessionAttribute(String name, Object value) {
     myRequest.getSession().setAttribute(name, value);
+  }
+
+  @Override
+  public void clearSession() {
+    Cookie cookie = new Cookie("JSESSIONID", null);
+    cookie.setDomain(myUrlService.getDomainName());
+    cookie.setPath("/");
+    cookie.setMaxAge(0);
+    myResponse.addCookie(cookie);
   }
 }
