@@ -56,12 +56,13 @@ public class HttpApiImpl implements HttpApi {
 
   @Override
   public String getUsername() {
-    return myRequest.username();
+    Object uidAttribute = getSessionAttribute("uid");
+    return uidAttribute == null ? null : String.valueOf(uidAttribute);
   }
 
   @Override
   public void setUsername(String value) {
-    myRequest.setUsername(value);
+    setSessionAttribute("uid", value);
   }
 
   @Override
