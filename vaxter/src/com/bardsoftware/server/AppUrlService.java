@@ -16,21 +16,42 @@ limitations under the License.
 package com.bardsoftware.server;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import com.google.common.base.Strings;
 
 public class AppUrlService {
   private static final Logger LOGGER = Logger.getLogger("Config");
   private static final Properties properties = new Properties();
   private final String host;
   private final String domain;
+  private boolean myDevMode;
   
   public String buildUrlFromPath(String path) {
     return host + path;
   }
 
+  public String getUrl(String urlName, HttpApi httpApi) {
+    try {
+      URL requestUrl = new URL(httpApi.getRequestUrl());
+      String hostCallback = properties.getProperty(requestUrl.getHost() + "." + urlName + (myDevMode ? ".dev" : ".prod"));
+      if (hostCallback == null) {
+        hostCallback = properties.getProperty(urlName + (myDevMode ? ".dev" : ".prod"));
+      }
+      if (hostCallback != null) {
+        hostCallback = hostCallback.trim();
+      }
+      return hostCallback;
+    } catch (MalformedURLException e) {
+      e.printStackTrace();
+      return null;
+    }
+  }
+  
   public String getDomainName() {
     return domain;
   }
@@ -40,6 +61,7 @@ public class AppUrlService {
   }
   
   public AppUrlService(boolean devMode) {    
+    myDevMode = devMode;
     host = "http://" + properties.getProperty(devMode ? "dev.host" : "prod.host");
     domain = properties.getProperty(devMode ? "dev.domain" : "prod.domain");
   }

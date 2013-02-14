@@ -90,7 +90,7 @@ public class AuthServlet {
       if (userDataJson != null) {
         
         authService.remember(http, authService.getUserFromLoginService(userDataJson, plugin));
-        http.sendRedirect(myUrlService.buildUrlFromPath(""));
+        http.sendRedirect(myUrlService.getUrl("oauth.complete", http));
       }
     } catch (ClassNotFoundException e) {
       LOGGER.log(Level.SEVERE, "", e);
@@ -128,7 +128,7 @@ public class AuthServlet {
     if (p != Principal.ANONYMOUS) {
       authService.logout(p, http);
     }
-    http.sendRedirect(myUrlService.buildUrlFromPath(""));
+    http.sendRedirect(myUrlService.getUrl("logout", http));
   }
 
   private String doOauth(HttpApi http, String authProvider, DefaultOAuthPlugin plugin) 
@@ -137,7 +137,7 @@ public class AuthServlet {
         .provider(plugin.getBuilderApiClass())
         .apiKey(plugin.getKey())
         .apiSecret(plugin.getSecret())
-        .callback(myUrlService.buildUrlFromPath(http.getPath()));
+        .callback(myUrlService.getUrl("oauth.callback", http) + authProvider);
     if (plugin.getScope() != null) {
       serviceBuilder.scope(plugin.getScope());
     }
@@ -160,7 +160,7 @@ public class AuthServlet {
     Token requestToken = (Token) http.getSessionAttribute("request_token");
     if ("1.0".equals(service.getVersion())) { 
       if (requestToken == null) {
-        http.sendRedirect(myUrlService.buildUrlFromPath(""));
+        http.sendRedirect(myUrlService.getUrl("oauth.failure", http));
         return null;
       }
     }
