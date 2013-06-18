@@ -54,6 +54,8 @@ public class AppUrlServiceProperties implements AppUrlService {
         }
         if (port > 0) {
           arguments.add(":" + port);
+        } else {
+          arguments.add("");
         }
         Object[] varargs = arguments.toArray(new String[0]);
         hostCallback = MessageFormat.format(hostCallback, varargs);
