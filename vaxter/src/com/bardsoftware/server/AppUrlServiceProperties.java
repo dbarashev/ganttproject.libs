@@ -15,9 +15,13 @@ limitations under the License.
 */
 package com.bardsoftware.server;
 
+import com.google.common.collect.Lists;
+
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.MessageFormat;
+import java.util.List;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -37,12 +41,22 @@ public class AppUrlServiceProperties implements AppUrlService {
   public String getUrl(String urlName, HttpApi httpApi) {
     try {
       URL requestUrl = new URL(httpApi.getRequestUrl());
-      String hostCallback = properties.getProperty(requestUrl.getHost() + "." + urlName + (myDevMode ? ".dev" : ".prod"));
+      int port = requestUrl.getPort();
+      String hostCallback = properties.getProperty(requestUrl.getHost() + "." + urlName);
       if (hostCallback == null) {
-        hostCallback = properties.getProperty(urlName + (myDevMode ? ".dev" : ".prod"));
+        hostCallback = properties.getProperty(urlName);
       }
       if (hostCallback != null) {
         hostCallback = hostCallback.trim();
+        List<String> arguments = Lists.newArrayList();
+        if (!hostCallback.startsWith("http")) {
+          arguments.add(requestUrl.getProtocol() + "://");
+        }
+        if (port > 0) {
+          arguments.add(":" + port);
+        }
+        Object[] varargs = arguments.toArray(new String[0]);
+        hostCallback = MessageFormat.format(hostCallback, varargs);
       }
       return hostCallback;
     } catch (MalformedURLException e) {
