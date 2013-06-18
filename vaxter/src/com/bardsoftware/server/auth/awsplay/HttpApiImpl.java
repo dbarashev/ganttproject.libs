@@ -22,7 +22,7 @@ public class HttpApiImpl implements HttpApi {
   private final Map<String, Object> myRequestData = Maps.newHashMap();
   private Result myResult;
   private final Session mySession;
-  
+
   public HttpApiImpl(Http.Request req, Http.Response resp, Http.Session session) {
     myRequest = req;
     myResponse = resp;
@@ -30,13 +30,18 @@ public class HttpApiImpl implements HttpApi {
   }
   @Override
   public String getRequestUrl() {
-    return myRequest.uri();
+    return "http://" + myRequest.host() + myRequest.uri();
   }
 
   @Override
   public String getUrlParameter(String name) {
     String[] values = myRequest.queryString().get(name);
     return values == null ? null : Joiner.on(',').join(values);
+  }
+
+  @Override
+  public String getHost() {
+    return myRequest.host();
   }
 
   @Override
@@ -103,7 +108,7 @@ public class HttpApiImpl implements HttpApi {
   public void sendError(int code) throws IOException {
     myResult = Results.status(code);
   }
-  
+
   public Result getResult() {
     return myResult == null ? Results.ok() : myResult;
   }

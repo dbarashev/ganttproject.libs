@@ -15,16 +15,10 @@ limitations under the License.
 */
 package com.bardsoftware.server.auth;
 
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.net.URL;
-import java.text.MessageFormat;
-import java.util.Properties;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import javax.servlet.http.HttpServletResponse;
-
+import com.bardsoftware.server.AppCapabilitiesService;
+import com.bardsoftware.server.AppUrlService;
+import com.bardsoftware.server.HttpApi;
+import com.google.common.base.Strings;
 import org.scribe.builder.ServiceBuilder;
 import org.scribe.exceptions.OAuthException;
 import org.scribe.model.OAuthRequest;
@@ -33,11 +27,16 @@ import org.scribe.model.Verb;
 import org.scribe.model.Verifier;
 import org.scribe.oauth.OAuthService;
 
-import com.bardsoftware.server.AppCapabilitiesService;
-import com.bardsoftware.server.AppUrlService;
-import com.bardsoftware.server.HttpApi;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.net.URL;
+import java.text.MessageFormat;
+import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 //import com.bardsoftware.server.auth.gae.PrincipalGae;
-import com.google.common.base.Strings;
 
 public class AuthServlet {
   private static final Logger LOGGER = Logger.getLogger("AuthService");
@@ -45,16 +44,16 @@ public class AuthServlet {
   private final AppUrlService myUrlService;
   private final AuthService authService;
   private final boolean isDevMode;
-  
-  public AuthServlet(boolean devMode, PrincipalExtent principalExtent, AppCapabilitiesService capabilities) {
+
+  public AuthServlet(boolean devMode, PrincipalExtent principalExtent, AppCapabilitiesService capabilities, AppUrlService urlService) {
     isDevMode = devMode;
-    myUrlService = new AppUrlService(devMode);
+    myUrlService = urlService;
     authService = new AuthService(principalExtent, capabilities);
     this.properties = new Properties();
     loadProperties(this.properties, "/auth.properties");
-    loadProperties(this.properties, "/auth.secret.properties");    
+    loadProperties(this.properties, "/auth.secret.properties");
   }
-  
+
   public void doGet(HttpApi http) throws IOException {
     String uri = http.getPath();
     String[] components = uri.split("/");
@@ -62,7 +61,7 @@ public class AuthServlet {
       http.sendError(HttpServletResponse.SC_BAD_REQUEST);
       return;
     }
-    
+
     Properties props = getProperties();
     String authProvider = components[2];
     if ("logout".equals(authProvider)) {
@@ -75,12 +74,12 @@ public class AuthServlet {
       return;
     }
 
-    
+
     try {
       String pluginClass = props.getProperty(authProvider + ".class.plugin", DefaultOAuthPlugin.class.getName());
       DefaultOAuthPlugin plugin = (DefaultOAuthPlugin) Class.forName(pluginClass)
           .getConstructor(String.class, Properties.class).newInstance(authProvider, props);
-      
+
       final String userDataJson;
       if ("dev".equals(authProvider)) {
         userDataJson = isDevMode ? doDevAuth(http, plugin) : null;
@@ -88,7 +87,7 @@ public class AuthServlet {
         userDataJson = doOauth(http, authProvider, plugin);
       }
       if (userDataJson != null) {
-        
+
         authService.remember(http, authService.getUserFromLoginService(userDataJson, plugin));
         http.sendRedirect(myUrlService.getUrl("oauth.complete", http));
       }
@@ -122,7 +121,7 @@ public class AuthServlet {
       return;
     }
   }
-  
+
   private void doLogout(HttpApi http) throws IOException {
     Principal p = authService.setupUserAndMaintenance(http);
     if (p != Principal.ANONYMOUS) {
@@ -131,7 +130,7 @@ public class AuthServlet {
     http.sendRedirect(myUrlService.getUrl("logout", http));
   }
 
-  private String doOauth(HttpApi http, String authProvider, DefaultOAuthPlugin plugin) 
+  private String doOauth(HttpApi http, String authProvider, DefaultOAuthPlugin plugin)
       throws IOException, ClassNotFoundException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
     ServiceBuilder serviceBuilder = new ServiceBuilder()
         .provider(plugin.getBuilderApiClass())
@@ -145,7 +144,7 @@ public class AuthServlet {
 
     if (Strings.isNullOrEmpty(plugin.extractToken(http))) {
       // Obtain the Request Token
-      if ("1.0".equals(service.getVersion())) { 
+      if ("1.0".equals(service.getVersion())) {
         Token requestToken = service.getRequestToken();
         http.setSessionAttribute("request_token", requestToken);
         http.sendRedirect(service.getAuthorizationUrl(requestToken));
@@ -158,7 +157,7 @@ public class AuthServlet {
 
     Verifier verifier = new Verifier(plugin.extractVerifier(http));
     Token requestToken = (Token) http.getSessionAttribute("request_token");
-    if ("1.0".equals(service.getVersion())) { 
+    if ("1.0".equals(service.getVersion())) {
       if (requestToken == null) {
         http.sendRedirect(myUrlService.getUrl("oauth.failure", http));
         return null;
@@ -168,7 +167,7 @@ public class AuthServlet {
       Token accessToken = service.getAccessToken(requestToken, verifier);
       OAuthRequest request = new OAuthRequest(Verb.GET, plugin.buildRequest(accessToken.getRawResponse()));
       service.signRequest(accessToken, request);
-      return request.send().getBody();      
+      return request.send().getBody();
     } catch (OAuthException e) {
       http.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
       return null;
@@ -179,16 +178,16 @@ public class AuthServlet {
     String id = http.getUrlParameter("id");
     String name = http.getUrlParameter("name");
     if (Strings.isNullOrEmpty(id) || Strings.isNullOrEmpty(name)) {
-      http.sendRedirect(myUrlService.buildUrlFromPath(plugin.getProperty(".redirect")));
+      http.sendRedirect(myUrlService.buildUrlFromPath(plugin.getProperty(".redirect"), http));
       return null;
     }
     return MessageFormat.format("'{'\"id\" : \"{0}\", \"name\" : \"{1}\"'}'", id, name);
   }
-  
+
   private Properties getProperties() {
     return this.properties;
   }
-  
+
   private static void loadProperties(Properties result, String resource) {
     URL url = AuthServlet.class.getResource(resource);
     if (url == null) {

@@ -1,26 +1,27 @@
 package com.bardsoftware.server.auth.gae;
 
-import java.io.IOException;
+import com.bardsoftware.server.AppUrlService;
+import com.bardsoftware.server.HttpApi;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-
-import com.bardsoftware.server.AppUrlService;
-import com.bardsoftware.server.HttpApi;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 public class HttpImpl implements HttpApi {
   private final HttpServletRequest myRequest;
   private final HttpServletResponse myResponse;
   private final AppUrlService myUrlService;
-  
+
   public HttpImpl(HttpServletRequest req, HttpServletResponse resp, AppUrlService urlService) {
     myRequest = req;
     myResponse = resp;
     myUrlService = urlService;
   }
-  
+
   @Override
   public String getUsername() {
     HttpSession session = myRequest.getSession(false);
@@ -56,6 +57,15 @@ public class HttpImpl implements HttpApi {
   @Override
   public void sendRedirect(String url) throws IOException {
     myResponse.sendRedirect(url);
+  }
+
+  @Override
+  public String getHost() {
+    try {
+      return new URL(myRequest.getRequestURL().toString()).getHost();
+    } catch (MalformedURLException e) {
+      return null;
+    }
   }
 
   @Override
