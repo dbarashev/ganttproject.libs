@@ -7,5 +7,5 @@ package com.bardsoftware.server;
 public interface AppUrlService {
   String buildUrlFromPath(String path, HttpApi httpApi);
   String getUrl(String urlName, HttpApi httpApi);
-  String getDomainName();
+  String getDomainName(HttpApi httpApi);
 }

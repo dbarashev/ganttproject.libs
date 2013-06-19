@@ -29,9 +29,6 @@ import java.util.logging.Logger;
 public class AppUrlServiceProperties implements AppUrlService {
   private static final Logger LOGGER = Logger.getLogger("Config");
   private static final Properties properties = new Properties();
-  private final String host;
-  private final String domain;
-  private boolean myDevMode;
 
   @Override
   public String buildUrlFromPath(String path, HttpApi httpApi) {
@@ -67,18 +64,16 @@ public class AppUrlServiceProperties implements AppUrlService {
     }
   }
 
-  public String getDomainName() {
-    return domain;
+  public String getDomainName(HttpApi httpApi) {
+    String hostname = httpApi.getHost();
+    return properties.getProperty(hostname + ".cookieDomain", hostname);
   }
 
   static {
     loadProperties(properties, "/app.properties");
   }
 
-  public AppUrlServiceProperties(boolean devMode) {
-    myDevMode = devMode;
-    host = "http://" + properties.getProperty(devMode ? "dev.host" : "prod.host");
-    domain = properties.getProperty(devMode ? "dev.domain" : "prod.domain");
+  public AppUrlServiceProperties() {
   }
 
   private static void loadProperties(Properties result, String resource) {

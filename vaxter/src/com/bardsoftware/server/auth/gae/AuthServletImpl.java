@@ -14,7 +14,7 @@ public class AuthServletImpl extends HttpServlet {
   private final AuthServlet myImpl;
   private final AppUrlService myUrlService;
   protected AuthServletImpl(boolean devMode) {
-    myUrlService = new AppUrlServiceProperties(devMode);
+    myUrlService = new AppUrlServiceProperties();
     myImpl = new AuthServlet(devMode, new PrincipalExtentImpl(), new AppCapabilitiesServiceImpl(), myUrlService);
   }
 

@@ -96,7 +96,7 @@ public class HttpImpl implements HttpApi {
   @Override
   public void clearSession() {
     Cookie cookie = new Cookie("JSESSIONID", null);
-    cookie.setDomain(myUrlService.getDomainName());
+    cookie.setDomain(myUrlService.getDomainName(this));
     cookie.setPath("/");
     cookie.setMaxAge(0);
     myResponse.addCookie(cookie);
