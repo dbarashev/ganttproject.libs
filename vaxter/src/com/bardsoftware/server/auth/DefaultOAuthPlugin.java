@@ -25,18 +25,68 @@ import com.bardsoftware.server.HttpApi;
 import com.google.common.base.Function;
 
 public class DefaultOAuthPlugin implements OAuthPlugin {
-  public static Function<JSONObject, String> createIdFormatter(final String providerPrefix, final String idAttr) {
+  /**
+   * Separator between authentication provider and provider's user id in formatted user id
+   */
+  private static final String ID_SEPARATOR = ":::";
+
+  public static Function<JSONObject, String> createIdFormatter(final String authProvider, final String idAttr) {
     return new Function<JSONObject, String>() {
       @Override
       public String apply(JSONObject json) {
         try {
-          return providerPrefix + json.getString(idAttr);
+          return buildId(authProvider, json.getString(idAttr));
         } catch (JSONException e) {
           return null;
         }
       }
     };
   }
+
+  /**
+   * Create id by authentication service name and user user id in that service
+   *
+   * @param authService name of the authentication service
+   * @param userId      id of the user in that service
+   * @return formatted id for the user
+   */
+  public static String buildId(String authService, String userId) {
+    return authService + ID_SEPARATOR + userId;
+  }
+
+  /**
+   * Parse formatted id by provider's name and user id in provider's service
+   *
+   * @param rawId id which should be parsed
+   * @return array with two elements - first is provider's name, second - user id
+   * @throws IllegalArgumentException if id has wrong format
+   * @see DefaultOAuthPlugin#isIdValid(String)
+   */
+  public static String[] parseId(String rawId) {
+    if (!isIdValid(rawId)) {
+      throw new IllegalArgumentException("Id has invalid format");
+    }
+    int separatorIdx = rawId.indexOf(ID_SEPARATOR);
+    int idStartIdx = separatorIdx + ID_SEPARATOR.length();
+    String provider = rawId.substring(0, separatorIdx);
+    String id = rawId.substring(idStartIdx);
+    return new String[] {provider, id};
+  }
+
+  /**
+   * Check is provided id has correct format
+   * @param id to test
+   * @return true, if id has correct format, false otherwise
+   */
+  public static boolean isIdValid(String id) {
+    if (id == null) {
+      return false;
+    }
+    int separatorIdx = id.indexOf(ID_SEPARATOR);
+    int idStartIdx = separatorIdx + ID_SEPARATOR.length();
+    return separatorIdx > 0 && idStartIdx < id.length();
+  }
+
   private final Function<JSONObject, String> myIdFormatter;
   private final String myIdAttr;
   private final String myFullNameAttr;
@@ -52,7 +102,7 @@ public class DefaultOAuthPlugin implements OAuthPlugin {
     myFullNameAttr = config.getProperty(authService + ".json.full_name");
     myFirstNameAttr = config.getProperty(authService + ".json.first_name");
     myLastNameAttr = config.getProperty(authService + ".json.last_name");
-    myIdFormatter = createIdFormatter(config.getProperty(authService + ".principal.prefix"), myIdAttr);    
+    myIdFormatter = createIdFormatter(authService, myIdAttr);
   }
     
   @Override
