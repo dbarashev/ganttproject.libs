@@ -42,7 +42,7 @@ public class EmailGetter extends AuthServlet {
         http.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         return null;
       }
-      plugin.addScope(emailScope);
+      plugin.setScope(emailScope);
 
       final String userDataJson = doOauthWithCallback(http, plugin, callback);
       if (userDataJson != null) {
@@ -59,5 +59,11 @@ public class EmailGetter extends AuthServlet {
       http.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
       return null;
     }
+  }
+  
+  public boolean isEmailSupported(String authProvider) {
+    Properties props = getProperties();
+    String emailScope = props.getProperty(String.format(EMAIL_SCOPE_KEY_FORMAT, authProvider));
+    return emailScope != null && getOauthPlugin(authProvider).isEmailSupported();
   }
 }

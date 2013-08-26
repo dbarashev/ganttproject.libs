@@ -102,6 +102,7 @@ public class AuthServlet {
       }
     } catch (ClassNotFoundException e) {
       http.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+      LOGGER.log(Level.SEVERE, "", e);
       return;
     } catch (InstantiationException e) {
       LOGGER.log(Level.SEVERE, "", e);

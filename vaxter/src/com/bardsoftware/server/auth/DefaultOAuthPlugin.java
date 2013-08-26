@@ -115,7 +115,7 @@ public class DefaultOAuthPlugin implements OAuthPlugin {
   }
 
   public String getEmail(JSONObject json) throws JSONException {
-    if (myEmailAttr == null) {
+    if (!isEmailSupported()) {
       throw new UnsupportedOperationException("Email acquiring is not supported");
     }
     if (myEmailValidAttr == null || json.getBoolean(myEmailValidAttr)) {
@@ -123,6 +123,10 @@ public class DefaultOAuthPlugin implements OAuthPlugin {
     } else {
       return null;
     }
+  }
+
+  public boolean isEmailSupported() {
+    return myEmailAttr != null;
   }
 
   @Override
@@ -188,7 +192,7 @@ public class DefaultOAuthPlugin implements OAuthPlugin {
     myConfig.setProperty(myAuthService + suffix, value);
   }
 
-  public void addScope(String scope) {
-    setProperty(".auth.scope", getProperty("auth.scope") + "+" + scope);
+  public void setScope(String scope) {
+    setProperty(".auth.scope", scope);
   }
 }
