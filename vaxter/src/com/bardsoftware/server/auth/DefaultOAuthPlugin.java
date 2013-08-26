@@ -94,6 +94,9 @@ public class DefaultOAuthPlugin implements OAuthPlugin {
   private final String myLastNameAttr;
   private final Properties myConfig;
   private final String myAuthService;
+  // nullable. If null then this plugin can't provide user email
+  private final String myEmailAttr;
+  private final String myEmailValidAttr;
   
   public DefaultOAuthPlugin(String authService, Properties config) {
     myAuthService = authService;
@@ -102,12 +105,25 @@ public class DefaultOAuthPlugin implements OAuthPlugin {
     myFullNameAttr = config.getProperty(authService + ".json.full_name");
     myFirstNameAttr = config.getProperty(authService + ".json.first_name");
     myLastNameAttr = config.getProperty(authService + ".json.last_name");
+    myEmailAttr = config.getProperty(authService + ".json.email");
+    myEmailValidAttr = config.getProperty(authService + ".json.email_valid");
     myIdFormatter = createIdFormatter(authService, myIdAttr);
   }
     
   @Override
   public String createUserId(JSONObject json) throws JSONException {
     return myIdFormatter.apply(json);
+  }
+
+  public String getEmail(JSONObject json) throws JSONException {
+    if (myEmailAttr == null) {
+      throw new UnsupportedOperationException("Email acquiring is not supported");
+    }
+    if (myEmailValidAttr == null || json.getBoolean(myEmailValidAttr)) {
+      return json.getString(myEmailAttr);
+    } else {
+      return null;
+    }
   }
 
   @Override

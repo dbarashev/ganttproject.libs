@@ -87,7 +87,6 @@ public class AuthServlet {
         userDataJson = doOauth(http, authProvider, plugin);
       }
       if (userDataJson != null) {
-
         authService.remember(http, authService.getUserFromLoginService(userDataJson, plugin));
         http.sendRedirect(myUrlService.getUrl("oauth.complete", http));
       }
@@ -129,14 +128,19 @@ public class AuthServlet {
     }
     http.sendRedirect(myUrlService.getUrl("logout", http));
   }
-
-  private String doOauth(HttpApi http, String authProvider, DefaultOAuthPlugin plugin)
+  
+  private String doOauth(HttpApi http, String authProvider, DefaultOAuthPlugin plugin) 
+      throws IOException, ClassNotFoundException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
+    return doOauthWithCallback(http, plugin, myUrlService.getUrl("oauth.callback", http) + authProvider);
+  }
+  
+  protected String doOauthWithCallback(HttpApi http, DefaultOAuthPlugin plugin, String callback)
       throws IOException, ClassNotFoundException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
     ServiceBuilder serviceBuilder = new ServiceBuilder()
         .provider(plugin.getBuilderApiClass())
         .apiKey(plugin.getKey())
         .apiSecret(plugin.getSecret())
-        .callback(myUrlService.getUrl("oauth.callback", http) + authProvider);
+        .callback(callback);
     if (plugin.getScope() != null) {
       serviceBuilder.scope(plugin.getScope());
     }
@@ -184,7 +188,7 @@ public class AuthServlet {
     return MessageFormat.format("'{'\"id\" : \"{0}\", \"name\" : \"{1}\"'}'", id, name);
   }
 
-  private Properties getProperties() {
+  protected Properties getProperties() {
     return this.properties;
   }
 
