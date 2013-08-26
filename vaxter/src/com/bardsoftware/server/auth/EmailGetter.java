@@ -14,34 +14,35 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * This servlet will run OAuth process similar to one that AuthServlet runs,
+ * but with additional email scope. It assumes that user is already authenticated
+ * with OAuth, and the only thing which is needed is to get his email.
+ *
+ * @author gkalabin@bardsoftware.com
+ * @author dbarashev@bardsoftware.com
+ */
 public class EmailGetter extends AuthServlet {
-  private static final String AUTH_SCOPE_KEY_FORMAT = "%s.auth.scope";
   private static final String EMAIL_SCOPE_KEY_FORMAT = "%s.email.scope";
   private static final Logger LOGGER = Logger.getLogger("EmailGetter");
 
   public EmailGetter(PrincipalExtent principalExtent, AppCapabilitiesService capabilities, AppUrlService urlService) {
     super(false, principalExtent, capabilities, urlService);
   }
-  
-  public String getEmail(String authProvider, HttpApi http, String callback) throws IOException {
-    Properties props = getProperties();
-    String keyIsEnabled = authProvider + ".enabled";
-    if (!Boolean.TRUE.equals(Boolean.parseBoolean(props.getProperty(keyIsEnabled, "false")))) {
-      http.sendError(HttpServletResponse.SC_FORBIDDEN);
-      return null;
-    }
 
+  public String getEmail(String authProvider, HttpApi http, String callback) throws IOException {
     try {
-      String pluginClass = props.getProperty(authProvider + ".class.plugin", DefaultOAuthPlugin.class.getName());
-      Properties properties = new Properties(props);
+      Properties props = getProperties();
       String emailScope = props.getProperty(String.format(EMAIL_SCOPE_KEY_FORMAT, authProvider));
       if (emailScope == null) {
         throw new UnsupportedOperationException("There is no email scope for this provider");
       }
-      // override auth scope
-      properties.setProperty(String.format(AUTH_SCOPE_KEY_FORMAT, authProvider), emailScope);
-      DefaultOAuthPlugin plugin = (DefaultOAuthPlugin) Class.forName(pluginClass)
-          .getConstructor(String.class, Properties.class).newInstance(authProvider, properties);
+      DefaultOAuthPlugin plugin = getOauthPlugin(authProvider);
+      if (plugin == null) {
+        http.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        return null;
+      }
+      plugin.addScope(emailScope);
 
       final String userDataJson = doOauthWithCallback(http, plugin, callback);
       if (userDataJson != null) {
@@ -52,7 +53,7 @@ public class EmailGetter extends AuthServlet {
         }
       }
       return null;
-    } catch (JSONException | ClassNotFoundException | InstantiationException | IllegalAccessException | IllegalArgumentException | 
+    } catch (JSONException | ClassNotFoundException | InstantiationException | IllegalAccessException | IllegalArgumentException |
         InvocationTargetException | NoSuchMethodException | SecurityException e) {
       LOGGER.log(Level.SEVERE, "", e);
       http.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);

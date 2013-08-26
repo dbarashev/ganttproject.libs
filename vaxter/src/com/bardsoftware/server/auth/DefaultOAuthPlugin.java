@@ -15,14 +15,13 @@ limitations under the License.
 */
 package com.bardsoftware.server.auth;
 
-import java.util.Properties;
-
+import com.bardsoftware.server.HttpApi;
+import com.google.common.base.Function;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.scribe.builder.api.Api;
 
-import com.bardsoftware.server.HttpApi;
-import com.google.common.base.Function;
+import java.util.Properties;
 
 public class DefaultOAuthPlugin implements OAuthPlugin {
   /**
@@ -97,19 +96,19 @@ public class DefaultOAuthPlugin implements OAuthPlugin {
   // nullable. If null then this plugin can't provide user email
   private final String myEmailAttr;
   private final String myEmailValidAttr;
-  
+
   public DefaultOAuthPlugin(String authService, Properties config) {
     myAuthService = authService;
-    myConfig = config;
-    myIdAttr = config.getProperty(authService + ".json.id");
-    myFullNameAttr = config.getProperty(authService + ".json.full_name");
-    myFirstNameAttr = config.getProperty(authService + ".json.first_name");
-    myLastNameAttr = config.getProperty(authService + ".json.last_name");
-    myEmailAttr = config.getProperty(authService + ".json.email");
-    myEmailValidAttr = config.getProperty(authService + ".json.email_valid");
+    myConfig = new Properties(config);
+    myIdAttr = myConfig.getProperty(authService + ".json.id");
+    myFullNameAttr = myConfig.getProperty(authService + ".json.full_name");
+    myFirstNameAttr = myConfig.getProperty(authService + ".json.first_name");
+    myLastNameAttr = myConfig.getProperty(authService + ".json.last_name");
+    myEmailAttr = myConfig.getProperty(authService + ".json.email");
+    myEmailValidAttr = myConfig.getProperty(authService + ".json.email_valid");
     myIdFormatter = createIdFormatter(authService, myIdAttr);
   }
-    
+
   @Override
   public String createUserId(JSONObject json) throws JSONException {
     return myIdFormatter.apply(json);
@@ -156,32 +155,40 @@ public class DefaultOAuthPlugin implements OAuthPlugin {
   public String buildRequest(String accessResponse) {
     return getProperty(".method");
   }
-  
+
   public Class<Api> getBuilderApiClass() throws ClassNotFoundException {
     return (Class<Api>)Class.forName(getProperty(".class"));
   }
-  
+
   public String getKey() {
     return getProperty(".auth.key");
   }
-  
+
   public String getSecret() {
     return getProperty(".auth.secret");
   }
-  
+
   public String getScope() {
     return getProperty(".auth.scope");
   }
-  
+
   public String extractToken(HttpApi req) {
     return req.getUrlParameter(getProperty(".param.request_token"));
   }
-  
+
   public String extractVerifier(HttpApi req) {
     return req.getUrlParameter(getProperty(".param.verifier"));
   }
-  
+
   public String getProperty(String suffix) {
     return myConfig.getProperty(myAuthService + suffix);
+  }
+
+  private void setProperty(String suffix, String value) {
+    myConfig.setProperty(myAuthService + suffix, value);
+  }
+
+  public void addScope(String scope) {
+    setProperty(".auth.scope", getProperty("auth.scope") + "+" + scope);
   }
 }
