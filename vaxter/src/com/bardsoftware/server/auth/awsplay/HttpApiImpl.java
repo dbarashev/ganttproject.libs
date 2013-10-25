@@ -3,6 +3,8 @@ package com.bardsoftware.server.auth.awsplay;
 import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import play.cache.Cache;
 import play.mvc.Http;
@@ -17,6 +19,9 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.Maps;
 
 public class HttpApiImpl implements HttpApi {
+  private static final Logger LOGGER = Logger.getLogger("HttpApiImpl");
+  private static final String SESSION_ID_KEY = "JSESSIONID";
+
   private final Request myRequest;
   private final Response myResponse;
   private final Map<String, Object> myRequestData = Maps.newHashMap();
@@ -51,12 +56,12 @@ public class HttpApiImpl implements HttpApi {
 
   @Override
   public String getSessionId() {
-    return null;
+    return mySession.get(SESSION_ID_KEY);
   }
 
   @Override
   public boolean hasSession() {
-    return mySession.get("JSESSIONID") != null;
+    return mySession.get(SESSION_ID_KEY) != null;
   }
 
   @Override
@@ -72,21 +77,33 @@ public class HttpApiImpl implements HttpApi {
 
   @Override
   public Object getSessionAttribute(String name) {
-    String sessionId = mySession.get("JSESSIONID");
+    String sessionId = mySession.get(SESSION_ID_KEY);
+    if (LOGGER.isLoggable(Level.FINE)) {
+      LOGGER.fine(String.format("getting attribute: session_id=%s", sessionId));
+    }
     if (sessionId == null) {
       return null;
     }
-    return Cache.get(sessionId + "." + name);
+    String attrKey = sessionId + "." + name;
+    Object attrVal = Cache.get(attrKey);
+    if (LOGGER.isLoggable(Level.FINE)) {
+      LOGGER.fine(String.format("getting attribute: got key=%s value=%s", attrKey, attrVal));
+    }
+    return attrVal;
   }
 
   @Override
   public void setSessionAttribute(String name, Object object) {
-    String sessionId = mySession.get("JSESSIONID");
+    String sessionId = mySession.get(SESSION_ID_KEY);
     if (sessionId == null) {
       sessionId = UUID.randomUUID().toString();
-      mySession.put("JSESSIONID", sessionId);
+      mySession.put(SESSION_ID_KEY, sessionId);
     }
-    Cache.set(sessionId + "." + name, object);
+    String attrKey = sessionId + "." + name;
+    if (LOGGER.isLoggable(Level.FINE)) {
+      LOGGER.fine(String.format("setting attribute: key=%s value=%s", attrKey, object));
+    }
+    Cache.set(attrKey, object);
   }
 
   @Override

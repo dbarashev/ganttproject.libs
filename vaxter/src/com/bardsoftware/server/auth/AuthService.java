@@ -15,8 +15,6 @@ limitations under the License.
 */
 package com.bardsoftware.server.auth;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -26,9 +24,6 @@ import org.json.JSONObject;
 import com.bardsoftware.server.AppCapabilitiesService;
 import com.bardsoftware.server.AppCapability;
 import com.bardsoftware.server.HttpApi;
-//import com.bardsoftware.server.auth.gae.AppCapabilitiesServiceImpl;
-//import com.bardsoftware.server.auth.gae.PrincipalGae;
-import com.google.common.base.Charsets;
 
 public class AuthService {
   private static final Logger LOGGER = Logger.getLogger("AuthService");
@@ -44,7 +39,7 @@ public class AuthService {
   private Principal getUser(final HttpApi http) {
     String userId = http.getUsername();
     if (LOGGER.isLoggable(Level.FINE)) {
-      LOGGER.fine("req url=" + http.getRequestUrl() + "session id=" + http.getSessionId() + "user id=" + userId);
+      LOGGER.fine(String.format("req url=%s session_id=%s user_id=%s", http.getRequestUrl(), http.getSessionId(), userId));
     }
     return (userId == null) ? null : principalExtent.find(String.valueOf(userId));
   }
@@ -55,74 +50,59 @@ public class AuthService {
     }
     http.clearSession();
   }
-    
-    public static String getMD5(String src) throws NoSuchAlgorithmException {
-      MessageDigest md = MessageDigest.getInstance("MD5");
-      md.update(src.getBytes(Charsets.UTF_8));
-      byte[] digest = md.digest();
-      StringBuffer hexDigest = new StringBuffer();
-      for (byte b: digest) {
-        String hexByte = Integer.toHexString(0xFF & b);
-        if (hexByte.length() == 1) {
-          hexDigest.append("0");
-        }
-        hexDigest.append(hexByte);
-      }
-      return hexDigest.toString();
-    }
         
-    public Principal remember(HttpApi http, Principal user) {
+  public Principal remember(HttpApi http, Principal user) {
+    if (user == null) {
+      user = Principal.ANONYMOUS;
+    } else {
+        http.setUsername(user.getID());
+        http.setRequestAttribute("user_id", user.getID());
+    }
+    return user;
+  }
+  
+  public Principal getUserFromLoginService(String jsonText, OAuthPlugin loginService) {
+    try {
+      if (jsonText == null) {
+        return null;
+      }
+      LOGGER.log(Level.FINE, "json from login service=" + jsonText);
+      JSONObject json = new JSONObject(jsonText);
+      if (loginService.isResponseOk(json)) {
+        String userId = loginService.createUserId(json); 
+        Principal result = principalExtent.find(userId);
+        if (result == null) {
+          String name = loginService.createUserName(json);
+          result = principalExtent.create(userId, name);
+        }
+        result.save();
+        return result;
+      }
+    } catch (JSONException e) {
+      LOGGER.log(Level.SEVERE, "", e);
+    }
+    return null;
+  }
+  
+  public Principal setupUserAndMaintenance(HttpApi http) {
+    Principal user = Principal.ANONYMOUS;
+    AppCapability writeCapability = capabilities.getWriteCapability();
+    switch (writeCapability.status) {
+    case ENABLED:
+      user = getUser(http);
       if (user == null) {
         user = Principal.ANONYMOUS;
-      } else {
-          http.setUsername(user.getID());
-          http.setRequestAttribute("user_id", user.getID());
       }
-      return user;
-    }
-    
-    public Principal getUserFromLoginService(String jsonText, OAuthPlugin loginService) {
-      try {
-        if (jsonText == null) {
-          return null;
-        }
-        LOGGER.log(Level.FINE, "json from login service=" + jsonText);
-        JSONObject json = new JSONObject(jsonText.toString());
-        if (loginService.isResponseOk(json)) {
-          String userId = loginService.createUserId(json); 
-          Principal result = principalExtent.find(userId);
-          if (result == null) {
-            String name = loginService.createUserName(json);
-            result = principalExtent.create(userId, name);
-          }
-          result.save();
-          return result;
-        }
-      } catch (JSONException e) {
-        LOGGER.log(Level.SEVERE, "", e);
+      http.setRequestAttribute("nickname", user.getNickname());
+      if (user != Principal.ANONYMOUS) {
+        http.setRequestAttribute("user_id", user.getID());
       }
-      return null;
+      break;
+    case DISABLED:
+      http.setRequestAttribute("maintenance", true);
+      http.setRequestAttribute("maintenance_", writeCapability.message);
+      break;
     }
-    
-    public Principal setupUserAndMaintenance(HttpApi http) {
-      Principal user = Principal.ANONYMOUS;
-      AppCapability writeCapability = capabilities.getWriteCapability();
-      switch (writeCapability.status) {
-      case ENABLED:
-        user = getUser(http);
-        if (user == null) {
-          user = Principal.ANONYMOUS;
-        }
-        http.setRequestAttribute("nickname", user.getNickname());
-        if (user != Principal.ANONYMOUS) {
-          http.setRequestAttribute("user_id", user.getID());
-        }
-        break;
-      case DISABLED:
-        http.setRequestAttribute("maintenance", true);
-        http.setRequestAttribute("maintenance_", writeCapability.message);
-        break;
-      }
-      return user;
-    }
+    return user;
+  }
 }
