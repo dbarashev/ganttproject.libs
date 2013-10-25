@@ -16,6 +16,7 @@ import play.mvc.Results;
 
 import com.bardsoftware.server.HttpApi;
 import com.google.common.base.Joiner;
+import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 
 public class HttpApiImpl implements HttpApi {
@@ -35,7 +36,8 @@ public class HttpApiImpl implements HttpApi {
   }
   @Override
   public String getRequestUrl() {
-    return "http://" + myRequest.host() + myRequest.uri();
+    String scheme = Objects.firstNonNull(myRequest.getHeader("X-Scheme"), "http");
+    return String.format("%s://%s%s", scheme, myRequest.host(), myRequest.uri());
   }
 
   @Override
