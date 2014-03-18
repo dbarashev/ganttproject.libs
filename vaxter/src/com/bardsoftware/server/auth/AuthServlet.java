@@ -43,20 +43,24 @@ public class AuthServlet {
   private static final Properties ourProperties = new Properties();
   private final AppUrlService myUrlService;
   private final AuthService authService;
-  private final boolean isDevMode;
+  private final Properties myProperties;
 
   static {
     loadProperties(ourProperties, "/auth.properties");
     loadProperties(ourProperties, "/auth.secret.properties");
   }
 
-  public AuthServlet(boolean devMode, PrincipalExtent principalExtent, AppCapabilitiesService capabilities, AppUrlService urlService) {
-    isDevMode = devMode;
-    myUrlService = urlService;
-    authService = new AuthService(principalExtent, capabilities);
+  public static Properties getDefaultProperties() {
+    return ourProperties;
   }
 
-  protected static DefaultOAuthPlugin getOauthPlugin(String authProvider) {
+  public AuthServlet(PrincipalExtent principalExtent, AppCapabilitiesService capabilities, AppUrlService urlService, Properties properties) {
+    myUrlService = urlService;
+    authService = new AuthService(principalExtent, capabilities);
+    myProperties = properties;
+  }
+
+  protected DefaultOAuthPlugin getOauthPlugin(String authProvider) {
     try {
       Properties props = getProperties();
       String keyIsEnabled = authProvider + ".enabled";
@@ -94,7 +98,7 @@ public class AuthServlet {
 
       final String userDataJson;
       if ("dev".equals(authProvider)) {
-        userDataJson = isDevMode ? doDevAuth(http, plugin) : null;
+        userDataJson = doDevAuth(http, plugin);
       } else {
         userDataJson = doOauth(http, authProvider, plugin);
       }
@@ -200,8 +204,8 @@ public class AuthServlet {
     return MessageFormat.format("'{'\"id\" : \"{0}\", \"name\" : \"{1}\"'}'", id, name);
   }
 
-  protected static Properties getProperties() {
-    return ourProperties;
+  protected Properties getProperties() {
+    return myProperties;
   }
 
   private static void loadProperties(Properties result, String resource) {

@@ -13,9 +13,9 @@ import java.io.IOException;
 public class AuthServletImpl extends HttpServlet {
   private final AuthServlet myImpl;
   private final AppUrlService myUrlService;
-  protected AuthServletImpl(boolean devMode) {
+  protected AuthServletImpl() {
     myUrlService = new AppUrlServiceProperties();
-    myImpl = new AuthServlet(devMode, new PrincipalExtentImpl(), new AppCapabilitiesServiceImpl(), myUrlService);
+    myImpl = new AuthServlet(new PrincipalExtentImpl(), new AppCapabilitiesServiceImpl(), myUrlService, AuthServlet.getDefaultProperties());
   }
 
   @Override

@@ -26,8 +26,8 @@ public class EmailGetter extends AuthServlet {
   private static final String EMAIL_SCOPE_KEY_FORMAT = "%s.email.scope";
   private static final Logger LOGGER = Logger.getLogger("EmailGetter");
 
-  public EmailGetter(PrincipalExtent principalExtent, AppCapabilitiesService capabilities, AppUrlService urlService) {
-    super(false, principalExtent, capabilities, urlService);
+  public EmailGetter(PrincipalExtent principalExtent, AppCapabilitiesService capabilities, AppUrlService urlService, Properties props) {
+    super(principalExtent, capabilities, urlService, props);
   }
 
   public String getEmail(String authProvider, HttpApi http, String callback) throws IOException {
@@ -61,7 +61,7 @@ public class EmailGetter extends AuthServlet {
     }
   }
 
-  public static boolean isEmailSupported(String authProvider) {
+  public boolean isEmailSupported(String authProvider) {
     Properties props = getProperties();
     String emailScope = props.getProperty(String.format(EMAIL_SCOPE_KEY_FORMAT, authProvider));
     return emailScope != null && getOauthPlugin(authProvider).isEmailSupported();
