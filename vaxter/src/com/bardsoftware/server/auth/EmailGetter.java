@@ -61,9 +61,8 @@ public class EmailGetter extends AuthServlet {
     }
   }
 
-  public boolean isEmailSupported(String authProvider) {
-    Properties props = getProperties();
+  public static boolean isEmailSupported(String authProvider, Properties props) {
     String emailScope = props.getProperty(String.format(EMAIL_SCOPE_KEY_FORMAT, authProvider));
-    return emailScope != null && getOauthPlugin(authProvider).isEmailSupported();
+    return emailScope != null && getOauthPlugin(authProvider, props).isEmailSupported();
   }
 }

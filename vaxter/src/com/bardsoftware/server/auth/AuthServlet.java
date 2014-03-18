@@ -61,8 +61,11 @@ public class AuthServlet {
   }
 
   protected DefaultOAuthPlugin getOauthPlugin(String authProvider) {
+    return getOauthPlugin(authProvider, getProperties());
+  }
+
+  protected static DefaultOAuthPlugin getOauthPlugin(String authProvider, Properties props) {
     try {
-      Properties props = getProperties();
       String keyIsEnabled = authProvider + ".enabled";
       if (!Boolean.TRUE.equals(Boolean.parseBoolean(props.getProperty(keyIsEnabled, "false")))) {
         return null;
