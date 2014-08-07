@@ -15,23 +15,23 @@ limitations under the License.
 */
 package com.bardsoftware.server.auth.gae;
 
-import javax.persistence.Embedded;
-import javax.persistence.Id;
+import com.googlecode.objectify.annotation.Cache;
+import com.googlecode.objectify.annotation.Entity;
+import com.googlecode.objectify.annotation.Embed;
+import com.googlecode.objectify.annotation.Id;
 
-import com.googlecode.objectify.annotation.Cached;
-
-@Cached(expirationSeconds = 3600)
+@Cache(expirationSeconds = 3600)
+@Entity
 public class PrincipalEntity {
   @Id String id;
-  String displayName;
-  String token;
-  @Embedded ContactEntity contacts = new ContactEntity();
-  @Embedded NotificationEntity notifications = new NotificationEntity();
-  Integer experiments;
+  public String displayName;
+  ContactEntity contacts = new ContactEntity();
+  public Integer experiments;
   
+  @Embed
   public static class ContactEntity {
     public String email;
-    String xmpp;
+    public String xmpp;
     public String emailVerificationToken;
     
     public ContactEntity() {}
@@ -42,22 +42,19 @@ public class PrincipalEntity {
     }
   }
 
-  public static class NotificationEntity {
-    int replies;
-    int news;
-    
-    public NotificationEntity() {}
-    public NotificationEntity(int replies, int news) {
-      this.replies = replies;
-      this.news = news;
-    }
-  }
-  
   public PrincipalEntity() {
   }
   
-  PrincipalEntity(String id, String displayName, String refID) {
+  protected PrincipalEntity(String id, String displayName) {
     this.id = id;
     this.displayName = displayName;
+  }
+
+  public ContactEntity getContacts() {
+    return this.contacts;
+  }
+
+  public String getId() {
+    return id;
   }
 }

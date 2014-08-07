@@ -12,8 +12,8 @@ public class PrincipalExtentImpl implements PrincipalExtent {
 
   @Override
   public Principal find(String id) {
-    Objectify ofy = ObjectifyService.begin();
-    PrincipalEntity entity = ofy.find(PrincipalEntity.class, id);
+    Objectify ofy = ObjectifyService.ofy();
+    PrincipalEntity entity = ofy.load().type(PrincipalEntity.class).id(id).now();
     return entity == null ? null : new PrincipalGae(entity);
   }
 

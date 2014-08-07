@@ -22,6 +22,7 @@ import java.util.logging.Logger;
 import com.bardsoftware.server.auth.Principal;
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
+import com.googlecode.objectify.Key;
 import com.googlecode.objectify.Objectify;
 import com.googlecode.objectify.ObjectifyService;
 
@@ -37,7 +38,7 @@ public class PrincipalGae implements Principal {
 
   
   public PrincipalGae(String id, String displayName) {
-    myEntity = new PrincipalEntity(id, displayName, null);
+    myEntity = new PrincipalEntity(id, displayName);
   }
 
   public PrincipalGae(PrincipalEntity entity) {
@@ -61,7 +62,7 @@ public class PrincipalGae implements Principal {
   }
       
   public com.googlecode.objectify.Key<PrincipalEntity> getKey() {
-    return new com.googlecode.objectify.Key<PrincipalEntity>(PrincipalEntity.class, myEntity.id);
+    return com.googlecode.objectify.Key.create(PrincipalEntity.class, myEntity.id);
   }
 
   @Override
@@ -70,8 +71,8 @@ public class PrincipalGae implements Principal {
   }
 
   public static Collection<PrincipalGae> find(Collection<String> ids) {
-    Objectify ofy = ObjectifyService.begin();
-    Map<String, PrincipalEntity> map = ofy.get(PrincipalEntity.class, ids);
+    Objectify ofy = ObjectifyService.ofy();
+    Map<String, PrincipalEntity> map = ofy.load().type(PrincipalEntity.class).ids(ids);
     return Collections2.transform(map.values(), new Function<PrincipalEntity, PrincipalGae>() {
       @Override
       public PrincipalGae apply(PrincipalEntity entity) {
@@ -84,27 +85,19 @@ public class PrincipalGae implements Principal {
       return this != PrincipalGae.ANONYMOUS;
   }
 
-  public void setToken(String token) {
-    myEntity.token = token;
-  }
-  
-  public String getToken() {
-    return myEntity.token;
-  }
-
   public static PrincipalGae findByEmail(String email) {
-    Objectify ofy = ObjectifyService.begin();
-    PrincipalEntity entity = ofy.query(PrincipalEntity.class).filter("contacts.email =", email).get();
+    Objectify ofy = ObjectifyService.ofy();
+    PrincipalEntity entity = ofy.load().type(PrincipalEntity.class).filter("contacts.email =", email).first().now();
     return entity == null ? null : new PrincipalGae(entity);
   }
   
   public static PrincipalGae find(com.googlecode.objectify.Key<PrincipalEntity> key) {
-    Objectify ofy = ObjectifyService.begin();
-    PrincipalEntity entity = ofy.get(key);
+    Objectify ofy = ObjectifyService.ofy();
+    PrincipalEntity entity = ofy.load().key(key).now();
     return entity == null ? null : new PrincipalGae(entity);
   }
 
   public void save() {
-    ObjectifyService.begin().put(myEntity);
+    ObjectifyService.ofy().save().entity(myEntity).now();
   }
 }
