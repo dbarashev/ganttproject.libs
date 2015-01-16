@@ -15,8 +15,11 @@ limitations under the License.
 */
 package com.bardsoftware.server.auth;
 
+import com.google.common.collect.ImmutableSet;
+
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.Set;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -104,5 +107,11 @@ public class AuthService {
       break;
     }
     return user;
+  }
+
+  private static final Set<String> VALID_PROVIDERS = ImmutableSet.of("email", "google", "facebook", "twitter", "vkontakte");
+
+  public static boolean isValidAuthProvider(String provider) {
+    return VALID_PROVIDERS.contains(provider);
   }
 }
