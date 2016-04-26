@@ -1,0 +1,24 @@
+<project xmlns:ivy="antlib:org.apache.ivy.ant" name="vaxter" default="resolve">
+
+    <target name="resolve" description="retrieve dependencies with ivy">
+        <ivy:retrieve pattern="lib/[artifact]-[revision].[ext]"/>
+    </target>
+
+    <target name="clean" description="Remove build directories">
+        <delete dir="lib"/>
+    </target>
+
+    <target name="clean-all" depends="clean" description="clean ivy cache">
+        <ivy:cleancache />
+    </target>
+
+    <target name="build" description="build vaxter jars">
+        <javac destdir="bin" srcdir="src">
+            <classpath>
+                <fileset dir="lib" includes="*.jar"/>
+            </classpath>
+        </javac>
+        <jar destfile="vaxter.jar" basedir="bin"/>
+        <jar destfile="vaxter-src.jar" basedir="src"/>
+    </target>
+</project>

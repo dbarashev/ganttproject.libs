@@ -1,0 +1,17 @@
+<ivy-module version="2.0">
+    <info organisation="com.bardsoftware" module="vaxter"/>
+    <configurations>
+      <conf name="binaries" description="binary jars"/>
+    </configurations>
+    <dependencies>
+        <dependency org="com.google.guava" name="guava" conf="binaries->default" rev="latest.release" transitive="false"/>
+        <dependency org="com.googlecode.objectify" name="objectify" conf="binaries->default" rev="4.0" transitive="false"/>
+        <dependency org="com.google.appengine" name="appengine-api-1.0-sdk" conf="binaries->default" rev="latest.release" transitive="false"/>
+        <dependency org="javax.servlet" name="javax.servlet-api" conf="binaries->default" rev="latest.release" transitive="false"/>
+        <dependency org="com.typesafe.play" name="play-java_2.10" conf="binaries->default" rev="2.3.10" transitive="false"/>
+        <dependency org="com.typesafe.play" name="play_2.10" conf="binaries->default" rev="2.3.10" transitive="false"/>
+        <dependency org="com.typesafe.play" name="play-cache_2.10" conf="binaries->default" rev="2.3.10" transitive="false"/>
+        <dependency org="org.json" name="json" conf="binaries->default" rev="latest.release" transitive="false"/>
+        <dependency org="org.scribe" name="scribe" conf="binaries->default" rev="latest.release" transitive="false"/>
+    </dependencies>
+</ivy-module>
